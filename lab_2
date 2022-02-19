@@ -1,0 +1,94 @@
+import numpy as np
+import cv2
+
+
+def draw_circle_my(x1, y1, r, my_image):
+    x = 0
+    y = r
+    delta = 1 - 2 * r
+    while y >= 0:
+        my_image[x1 + x, y1 + y] = (255, 255, 255)
+        my_image[x1 + x, y1 - y] = (255, 255, 255)
+        my_image[x1 - x, y1 + y] = (255, 255, 255)
+        my_image[x1 - x, y1 - y] = (255, 255, 255)
+        error = 2 * (delta + y) - 1
+        if delta < 0 and error <= 0:
+            x += 1
+            delta += 2 * x + 1
+            continue
+        error = 2 * (delta - x) - 1
+        if delta > 0 and error > 0:
+            y -= 1
+            delta += 1 - 2 * y
+            continue
+        x += 1
+        delta += 2 * (x - y)
+        y -= 1
+
+
+def draw_line_my(x0, y0, x1, y1, my_image):
+    steep = False
+    if abs(x0 - x1) < abs(y0 - y1):
+        x0, y0 = y0, x0
+        x1, y1 = y1, x1
+        steep = True
+    if x0 > x1:
+        x0, x1 = x1, x0
+        y0, y1 = y1, y0
+
+    dx = x1 - x0
+    dy = y1 - y0
+    x, y = x0, y0
+    derror = abs(dy)*2
+    error = 0
+    while x <= x1:
+        if steep:
+            my_image[y, x] = (255, 255, 255)
+        else:
+            my_image[x, y] = (255, 255, 255)
+        error += derror
+        if error > dx:
+            y += 1 if y1 > y0 else -1
+            error -= dx * 2
+        x += 1
+
+
+def draw_model(filename, my_image):
+    verts = []
+    with open(filename) as file:
+        for line in file:
+            if line.startswith("v "):
+                vert_str = line[2:]
+                v = list(map(lambda s: float(s), vert_str.split(' ')))
+                verts.append(v)
+
+            elif line.startswith("f "):
+                face_str = line[2:]
+                f = list(map(lambda s: int(s.split('/')[0]) - 1, face_str.split(' ')))
+
+                draw_line_my(800 - int(((verts[f[0]][1]) + 1) * 400),
+                             int(((verts[f[0]][0]) + 1) * 400),
+                             800 - int(((verts[f[1]][1]) + 1) * 400),
+                             int(((verts[f[1]][0]) + 1) * 400), my_image)
+
+                draw_line_my(800 - int(((verts[f[1]][1]) + 1) * 400),
+                             int(((verts[f[1]][0]) + 1) * 400),
+                             800 - int(((verts[f[2]][1]) + 1) * 400),
+                             int(((verts[f[2]][0]) + 1) * 400), my_image)
+
+                draw_line_my(800 - int(((verts[f[0]][1]) + 1) * 400),
+                             int(((verts[f[0]][0]) + 1) * 400),
+                             800 - int(((verts[f[2]][1]) + 1) * 400),
+                             int(((verts[f[2]][0]) + 1) * 400), my_image)
+
+
+image = np.zeros((803, 803, 3), dtype=np.uint8)
+draw_model('res/african_head.obj', image)
+cv2.imwrite('res/result2/head.jpg', image)
+
+image2 = np.zeros((803, 803, 3), dtype=np.uint8)
+draw_circle_my(201, 600, 200, image2)
+draw_line_my(1, 1, 800, 800, image2)
+draw_line_my(44, 33, 77, 44, image2)
+draw_circle_my(200, 200, 100, image2)
+cv2.imwrite('res/result2/line_circ.jpg', image2)
